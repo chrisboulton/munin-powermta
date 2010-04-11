@@ -11,6 +11,11 @@ Various plugins to monitor/graph statistics from PowerMTA. (http://port25.com/)
 * powermta_traffic_ - Wildcard plugin for monitoring volume of mail (either by
   message or traffic) passing in and out of PowerMTA
 
+Requirements
+------------
+
+* Ruby
+
 Installation and Configuration
 ------------------------------
 
