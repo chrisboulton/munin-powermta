@@ -22,10 +22,10 @@ Configuration defaults to looking for a PowerMTA installation on
 http://localhost:8080/ with no username/password. This can be changed in the
 Munin configuration like so:
 
-[powermta_*]
-env.url http://localhost:8080
-env.auth_user admin
-env.auth_password somepass
+	[powermta_*]
+	env.url http://localhost:8080
+	env.auth_user admin
+	env.auth_password somepass
 
 Author
 ------
