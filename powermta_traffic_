@@ -99,11 +99,13 @@ in.label received
 in.type DERIVE
 in.graph no
 in.min 0
+in.max 1000000
 
 out.label messages
 out.type DERIVE
 out.negative in
 out.min 0
+out.max 1000000
 
 EOF
 end
