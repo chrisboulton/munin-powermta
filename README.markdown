@@ -31,7 +31,9 @@ Author
 ------
 
 Chris Boulton <chris.boulton@interspire.com>
+
 http://chrisboulton.net/
+
 http://github.com/chrisboulton/munin-powermta
 
 Version
