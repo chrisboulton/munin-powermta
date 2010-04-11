@@ -1,0 +1,185 @@
+#!/usr/bin/env ruby
+pod=<<-POD
+
+=head1 NAME
+
+powermta_traffic_
+Munin plugin that monitors the amount (message or transfer volume) both in
+and out of PowerMTA.
+
+This is a wildcard plugin, there are two types of data that can be graphed:
+ - msg      Message throughput
+ - volume   Traffic throughput
+
+=head1 CONFIGURATION
+
+The PowerMTA HTTP status interface must be enabled.
+
+Options:
+  env.url http://localhost:8080 # URL to PowerMTA monitor page
+  env.auth_user [empty]         # HTTP auth username for stats, if any
+  env.auth_pass [empty]         # HTTP auth password for stats, if any
+
+ln -s /usr/share/munin/plugins/powermta_traffic_msg \
+  /etc/munin/plugins/powermta_traffic_
+ln -s /usr/share/munin/plugins/powermta_traffic_volume \
+  /etc/munin/plugins/powermta_traffic_
+
+=head1 MAGIC MARKERS
+  #%# family=auto
+  #%# capabilities=autoconf
+  
+=head1 VERSION
+1.0
+
+=head1 AUTHOR
+Chris Boulton <chris.boulton@interspire.com>
+http://chrisboulton.net/
+http://github.com/chrisboulton/munin-powermta
+
+=head1 LICENSE
+BSD
+
+POD
+
+require 'pathname'
+require 'net/http'
+require 'rexml/document'
+
+PMTA_URL  = ENV['url'] || 'http://localhost:8080'
+PMTA_USER = ENV['auth_user'] || ''
+PMTA_PASS = ENV['auth_pass'] || ''
+
+SCRIPT_NAME = File.basename(Pathname.new(__FILE__).realpath)
+
+STAT_TYPE = File.basename($0).gsub(SCRIPT_NAME, '');
+
+def autoconf
+  begin
+    get_powermta_stats
+  rescue Exception => e
+    puts "no (#{e})"
+  end
+
+  puts "yes"
+  exit 0
+end
+
+def config_volume
+  puts <<-EOF
+graph_category PowerMTA
+graph_title PowerMTA traffic by volume
+graph_order in out
+graph_vlabel bits in (-) / out (+) per ${graph_period}
+graph_args --base 1000
+graph_scale no
+
+in.label received
+in.type DERIVE
+in.graph no
+in.min 0
+in.cdef in,8,*
+
+out.label bits
+out.type DERIVE
+out.negative in
+out.min 0
+out.cdef in,8,*
+EOF
+end
+
+def config_msg
+  puts <<-EOF
+graph_category PowerMTA
+graph_title PowerMTA traffic by message count
+graph_order in out
+graph_vlabel messages in (-) / out (+) per ${graph_period}
+graph_args --base 1000
+
+in.label received
+in.type DERIVE
+in.graph no
+in.min 0
+
+out.label messages
+out.type DERIVE
+out.negative in
+out.min 0
+
+EOF
+end
+
+def suggest
+  puts "msg\nvolume"
+  exit 0
+end
+
+def fetch_volume
+  begin
+    rsp = get_powermta_stats
+    stat = (get_powermta_stat(rsp, "//traffic/total/out/kb").to_f * 1000).round
+    puts "out.value #{stat}\n"
+    stat = (get_powermta_stat(rsp, "//traffic/total/in/kb").to_f * 1000).round
+    puts "in.value #{stat}"
+  rescue Exception => e
+    $stderr.puts e
+    exit 1
+  end
+end
+
+def fetch_msg
+  begin
+    rsp = get_powermta_stats
+    stat = get_powermta_stat(rsp, "//traffic/total/out/msg")
+    puts "out.value #{stat}\n"
+    stat = get_powermta_stat(rsp, "//traffic/total/in/msg")
+    puts "in.value #{stat}"
+  rescue Exception => e
+    $stderr.puts e
+    exit 1
+  end
+end
+
+def get_powermta_stats
+  url = "#{PMTA_URL}/status?format=xml"
+  begin
+    response = Net::HTTP.get_response(URI.parse(url)).body
+    xml = REXML::Document.new(response)
+  rescue Exception => e
+    raise "Unable to fetch PowerMTA status from #{url}"
+  end
+  
+  rsp = REXML::XPath.first(xml, "//rsp")
+  if rsp.nil?
+    raise "Not a valid PowerMTA status page"
+  end
+  
+  return rsp
+end
+
+def get_powermta_stat(rsp, stat)
+  result = REXML::XPath.first(rsp, stat)
+  if stat.nil?
+    raise "Unable to locate statistic for #{stat}"
+  end
+  
+  return result.text
+end
+
+if ARGV[0] == "config"
+  if STAT_TYPE == "msg"
+    config_msg
+  else
+    config_volume
+  end
+elsif ARGV[0] == "suggest"
+  suggest
+elsif ARGV[0] == "autoconf"
+  autoconf
+else
+  if STAT_TYPE == "msg"
+    fetch_msg
+  else
+    fetch_volume
+  end
+end
