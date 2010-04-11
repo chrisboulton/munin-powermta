@@ -10,6 +10,8 @@ Various plugins to monitor/graph statistics from PowerMTA. (http://port25.com/)
 * powermta_queues - Number of messages in different PowerMTA queues
 * powermta_traffic_ - Wildcard plugin for monitoring volume of mail (either by
   message or traffic) passing in and out of PowerMTA
+* powermta_vmta_queues - Number of messages in the queue per VMTA
+* powermta_domain_queues - Top 10 domains in the queue
 
 Requirements
 ------------
