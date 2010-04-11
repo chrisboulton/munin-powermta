@@ -63,7 +63,7 @@ def config
   puts <<-EOF
 graph_category PowerMTA
 graph_title PowerMTA connections
-graph_order in out
+graph_order out, in
 graph_vlabel active connections in (-) / out (+)
 graph_args --base 1000
 graph_scale no
